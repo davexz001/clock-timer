@@ -1,50 +1,54 @@
 document.addEventListener('DOMContentLoaded', () => {
-  let timerMinutes = 1; // Set minutes
-  let timerSeconds = 10; // Set seconds
+  let minutes = 1;
+  let seconds = 10;
 
-  const minutesTens = document.getElementById('minutes-tens');
-  const minutesOnes = document.getElementById('minutes-ones');
-  const secondsTens = document.getElementById('seconds-tens');
-  const secondsOnes = document.getElementById('seconds-ones');
+  const digits = {
+    minutesTens: document.getElementById('minutes-tens'),
+    minutesOnes: document.getElementById('minutes-ones'),
+    secondsTens: document.getElementById('seconds-tens'),
+    secondsOnes: document.getElementById('seconds-ones')
+  };
 
-  // Update the displayed numbers
+  function updateDigit(flipDigit, value) {
+    const top = flipDigit.querySelector('.top');
+    const bottom = flipDigit.querySelector('.bottom');
+
+    if (top.textContent !== value) {
+      flipDigit.classList.add('flip');
+
+      setTimeout(() => {
+        top.textContent = value;
+        bottom.textContent = value;
+        flipDigit.classList.remove('flip');
+      }, 250);
+    }
+  }
+
   function updateDisplay() {
-    const mins = String(timerMinutes).padStart(2, '0');
-    const secs = String(timerSeconds).padStart(2, '0');
+    const mins = String(minutes).padStart(2, '0');
+    const secs = String(seconds).padStart(2, '0');
 
-    if (minutesTens.textContent !== mins[0]) flip(minutesTens, mins[0]);
-    if (minutesOnes.textContent !== mins[1]) flip(minutesOnes, mins[1]);
-    if (secondsTens.textContent !== secs[0]) flip(secondsTens, secs[0]);
-    if (secondsOnes.textContent !== secs[1]) flip(secondsOnes, secs[1]);
+    updateDigit(digits.minutesTens, mins[0]);
+    updateDigit(digits.minutesOnes, mins[1]);
+    updateDigit(digits.secondsTens, secs[0]);
+    updateDigit(digits.secondsOnes, secs[1]);
   }
 
-  // Flip animation
-  function flip(digit, newValue) {
-    digit.classList.add('flip');
-    setTimeout(() => {
-      digit.textContent = newValue;
-      digit.classList.remove('flip');
-    }, 250);
-  }
-
-  // Countdown function
   function countdown() {
-    if (timerMinutes === 0 && timerSeconds === 0) return;
+    if (minutes === 0 && seconds === 0) return;
 
-    if (timerSeconds === 0) {
-      if (timerMinutes > 0) {
-        timerMinutes--;
-        timerSeconds = 59;
+    if (seconds === 0) {
+      if (minutes > 0) {
+        minutes--;
+        seconds = 59;
       }
     } else {
-      timerSeconds--;
+      seconds--;
     }
 
     updateDisplay();
   }
 
-  // Initial display
   updateDisplay();
-  // Update every second
   setInterval(countdown, 1000);
 });
