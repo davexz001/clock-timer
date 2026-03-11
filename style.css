@@ -5,7 +5,7 @@ body {
   height: 100vh;
   background: #111;
   color: #fff;
-  font-family: 'Arial', sans-serif;
+  font-family: Arial, sans-serif;
 }
 
 .timer {
@@ -25,30 +25,14 @@ body {
   perspective: 600px;
   position: relative;
   overflow: hidden;
+  color: #fff;
 }
 
-.digit::before,
-.digit::after {
-  content: '';
-  position: absolute;
-  width: 100%;
-  height: 50%;
-  background: #333;
-  left: 0;
-  transform-origin: bottom;
-  backface-visibility: hidden;
-  transition: transform 0.3s ease;
-}
-
-.digit::before {
-  top: 0;
-  border-bottom: 1px solid #111;
-}
-
-.digit::after {
-  bottom: 0;
-  transform-origin: top;
-  border-top: 1px solid #111;
+.separator {
+  display: flex;
+  align-items: center;
+  font-size: 5rem;
+  margin: 0 5px;
 }
 
 .flip {
@@ -57,5 +41,6 @@ body {
 
 @keyframes flip {
   0% { transform: rotateX(0deg); }
+  50% { transform: rotateX(-90deg); }
   100% { transform: rotateX(-180deg); }
 }
