@@ -4,13 +4,336 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Flip Clock</title>
-  <link rel="stylesheet" href="styles.css" />
+
+  <!-- ========== CSS ========== -->
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #0a0a0a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    #clock {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      background: #111;
+      padding: 40px 36px 32px;
+      border-radius: 16px;
+    }
+
+    #date-line {
+      font-size: 11px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: #444;
+      white-space: nowrap;
+    }
+
+    #time-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .group-label {
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #333;
+    }
+
+    .pair {
+      display: flex;
+      flex-direction: row;
+      gap: 6px;
+    }
+
+    .sep {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .sep-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #555;
+      animation: blink 1s step-start infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { background: #555; }
+      50%       { background: #222; }
+    }
+
+    /* card */
+    .card {
+      position: relative;
+      width: 80px;
+      height: 110px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #1c1c1c;
+    }
+
+    .card-gap {
+      position: absolute;
+      left: 0; right: 0;
+      top: 53px;
+      height: 4px;
+      background: #0a0a0a;
+      z-index: 30;
+    }
+
+    .s-top {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 55px;
+      overflow: hidden;
+      background: #232323;
+      border-radius: 8px 8px 0 0;
+      z-index: 1;
+    }
+
+    .s-bot {
+      position: absolute;
+      top: 55px; left: 0; right: 0;
+      height: 55px;
+      overflow: hidden;
+      background: #1a1a1a;
+      border-radius: 0 0 8px 8px;
+      z-index: 1;
+    }
+
+    .s-top .digit {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 110px;
+      line-height: 110px;
+      text-align: center;
+      font-size: 72px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .s-bot .digit {
+      position: absolute;
+      top: -55px; left: 0; right: 0;
+      height: 110px;
+      line-height: 110px;
+      text-align: center;
+      font-size: 72px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .f-top {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 55px;
+      overflow: hidden;
+      background: #232323;
+      border-radius: 8px 8px 0 0;
+      z-index: 20;
+      transform-origin: bottom center;
+      transform: rotateX(0deg);
+      backface-visibility: hidden;
+    }
+
+    .f-top .digit {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 110px;
+      line-height: 110px;
+      text-align: center;
+      font-size: 72px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .f-bot {
+      position: absolute;
+      top: 55px; left: 0; right: 0;
+      height: 55px;
+      overflow: hidden;
+      background: #1a1a1a;
+      border-radius: 0 0 8px 8px;
+      z-index: 20;
+      transform-origin: top center;
+      transform: rotateX(90deg);
+      backface-visibility: hidden;
+    }
+
+    .f-bot .digit {
+      position: absolute;
+      top: -55px; left: 0; right: 0;
+      height: 110px;
+      line-height: 110px;
+      text-align: center;
+      font-size: 72px;
+      font-weight: 700;
+      color: #fff;
+    }
+  </style>
 </head>
 <body>
+
+  <!-- ========== HTML ========== -->
   <div id="clock">
     <div id="date-line"></div>
     <div id="time-row"></div>
   </div>
-  <script src="app.js"></script>
+
+  <!-- ========== JAVASCRIPT ========== -->
+  <script>
+    var DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    var MONTHS = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+    function make(cls) {
+      var e = document.createElement('div');
+      e.className = cls;
+      return e;
+    }
+
+    function createCard() {
+      var card  = make('card');
+      var sTop  = make('s-top');  var sTopD = make('digit'); sTop.appendChild(sTopD);
+      var sBot  = make('s-bot');  var sBotD = make('digit'); sBot.appendChild(sBotD);
+      var fTop  = make('f-top');  var fTopD = make('digit'); fTop.appendChild(fTopD);
+      var fBot  = make('f-bot');  var fBotD = make('digit'); fBot.appendChild(fBotD);
+      var gap   = make('card-gap');
+      card.appendChild(sTop);
+      card.appendChild(sBot);
+      card.appendChild(fTop);
+      card.appendChild(fBot);
+      card.appendChild(gap);
+      return { card:card, sTopD:sTopD, sBotD:sBotD,
+               fTop:fTop, fBot:fBot, fTopD:fTopD, fBotD:fBotD,
+               current:null, busy:false };
+    }
+
+    function createGroup(label) {
+      var group = make('group');
+      var pair  = make('pair');
+      var c0 = createCard(), c1 = createCard();
+      pair.appendChild(c0.card);
+      pair.appendChild(c1.card);
+      var lbl = make('group-label');
+      lbl.textContent = label;
+      group.appendChild(pair);
+      group.appendChild(lbl);
+      return { group:group, cards:[c0,c1] };
+    }
+
+    function createSep() {
+      var sep = make('sep');
+      sep.appendChild(make('sep-dot'));
+      sep.appendChild(make('sep-dot'));
+      return sep;
+    }
+
+    function flipCard(c, next) {
+      if (c.current === next || c.busy) return;
+      var old   = c.current || next;
+      c.busy    = true;
+      c.current = next;
+
+      c.sTopD.textContent = next;
+      c.sBotD.textContent = next;
+
+      c.fTopD.textContent     = old;
+      c.fTop.style.transition = 'none';
+      c.fTop.style.transform  = 'rotateX(0deg)';
+
+      c.fBotD.textContent     = next;
+      c.fBot.style.transition = 'none';
+      c.fBot.style.transform  = 'rotateX(90deg)';
+
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          c.fTop.style.transition = 'transform 0.25s ease-in';
+          c.fTop.style.transform  = 'rotateX(-90deg)';
+          setTimeout(function() {
+            c.fBot.style.transition = 'transform 0.25s ease-out';
+            c.fBot.style.transform  = 'rotateX(0deg)';
+            setTimeout(function() {
+              c.fTop.style.transition = 'none';
+              c.fTop.style.transform  = 'rotateX(0deg)';
+              c.fBot.style.transition = 'none';
+              c.fBot.style.transform  = 'rotateX(90deg)';
+              c.busy = false;
+            }, 260);
+          }, 240);
+        });
+      });
+    }
+
+    var timeRow = document.getElementById('time-row');
+    var gH = createGroup('hours');
+    var gM = createGroup('min');
+    var gS = createGroup('sec');
+    timeRow.appendChild(gH.group);
+    timeRow.appendChild(createSep());
+    timeRow.appendChild(gM.group);
+    timeRow.appendChild(createSep());
+    timeRow.appendChild(gS.group);
+
+    function seed() {
+      var now = new Date();
+      var hs = pad(now.getHours());
+      var ms = pad(now.getMinutes());
+      var ss = pad(now.getSeconds());
+      var all = [[gH.cards,hs],[gM.cards,ms],[gS.cards,ss]];
+      for (var i = 0; i < all.length; i++) {
+        for (var j = 0; j < 2; j++) {
+          all[i][0][j].current           = all[i][1][j];
+          all[i][0][j].sTopD.textContent = all[i][1][j];
+          all[i][0][j].sBotD.textContent = all[i][1][j];
+        }
+      }
+    }
+
+    function tick() {
+      var now = new Date();
+      var hs = pad(now.getHours());
+      var ms = pad(now.getMinutes());
+      var ss = pad(now.getSeconds());
+      flipCard(gH.cards[0], hs[0]); flipCard(gH.cards[1], hs[1]);
+      flipCard(gM.cards[0], ms[0]); flipCard(gM.cards[1], ms[1]);
+      flipCard(gS.cards[0], ss[0]); flipCard(gS.cards[1], ss[1]);
+      document.getElementById('date-line').textContent =
+        DAYS[now.getDay()] + '  \u00b7  ' +
+        MONTHS[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+    }
+
+    seed();
+    tick();
+    setInterval(tick, 1000);
+  </script>
+
 </body>
 </html>
