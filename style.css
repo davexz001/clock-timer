@@ -1,35 +1,33 @@
-/* =============================================
-   FLIP CLOCK — styles.css
-   ============================================= */
-
 *, *::before, *::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-html, body {
-  width: 100%;
+html {
   height: 100%;
-  background: #0a0a0a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Courier New', monospace;
 }
 
-/* ── Outer clock container ── */
+body {
+  height: 100%;
+  background-color: #0a0a0a;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Courier New', Courier, monospace;
+}
+
 #clock {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 20px;
-  background: #111111;
-  padding: 40px 36px 32px;
+  background-color: #111111;
+  padding: 40px 36px 32px 36px;
   border-radius: 16px;
 }
 
-/* ── Date string ── */
 #date-line {
   font-size: 11px;
   letter-spacing: 0.28em;
@@ -38,7 +36,6 @@ html, body {
   white-space: nowrap;
 }
 
-/* ── Horizontal time row ── */
 #time-row {
   display: flex;
   flex-direction: row;
@@ -46,7 +43,6 @@ html, body {
   gap: 14px;
 }
 
-/* ── Group (hours / min / sec) ── */
 .group {
   display: flex;
   flex-direction: column;
@@ -61,17 +57,17 @@ html, body {
   color: #333333;
 }
 
-/* ── Digit pair inside a group ── */
 .pair {
   display: flex;
   flex-direction: row;
+  align-items: center;
   gap: 6px;
 }
 
-/* ── Separator dots ── */
 .sep {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 16px;
   margin-bottom: 20px;
 }
@@ -80,62 +76,68 @@ html, body {
   width: 7px;
   height: 7px;
   border-radius: 50%;
+  background-color: #555555;
   animation: blink 1s step-start infinite;
 }
 
 @keyframes blink {
-  0%, 100% { background: #555555; }
-  50%       { background: #1e1e1e; }
+  0%, 100% { background-color: #555555; }
+  50%       { background-color: #1e1e1e; }
 }
 
-/* ── Individual flip card ── */
+/* ── card ── */
 .card {
   position: relative;
   width: 80px;
   height: 110px;
   border-radius: 8px;
-  background: #1c1c1c;
   overflow: hidden;
+  background-color: #1c1c1c;
 }
 
-/* Centre dividing line */
 .card-gap {
   position: absolute;
   left: 0;
   right: 0;
-  top: 50%;
+  top: calc(50% - 1px);
   height: 3px;
-  background: #0a0a0a;
-  transform: translateY(-50%);
+  background-color: #0a0a0a;
   z-index: 30;
 }
 
-/* ── Static top half ── */
+/* static top half */
 .s-top {
   position: absolute;
-  top: 0; left: 0; right: 0;
+  top: 0;
+  left: 0;
+  right: 0;
   height: 50%;
-  background: #232323;
-  border-radius: 8px 8px 0 0;
   overflow: hidden;
+  background-color: #232323;
+  border-radius: 8px 8px 0 0;
   z-index: 1;
 }
 
-/* ── Static bottom half ── */
+/* static bottom half */
 .s-bot {
   position: absolute;
-  bottom: 0; left: 0; right: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
   height: 50%;
-  background: #1a1a1a;
-  border-radius: 0 0 8px 8px;
   overflow: hidden;
+  background-color: #1a1a1a;
+  border-radius: 0 0 8px 8px;
   z-index: 1;
 }
 
-/* Digit inside static top — full card height, clips to top 50% */
+/* digit inside top: positioned so the full digit is centred across the card,
+   only the top half is visible due to overflow:hidden on .s-top */
 .s-top .digit {
   position: absolute;
-  top: 0; left: 0; right: 0;
+  top: 0;
+  left: 0;
+  right: 0;
   height: 110px;
   display: flex;
   align-items: center;
@@ -146,10 +148,12 @@ html, body {
   line-height: 1;
 }
 
-/* Digit inside static bottom — shifted so only bottom half of numeral shows */
+/* digit inside bottom: shifted up so only the bottom half shows */
 .s-bot .digit {
   position: absolute;
-  bottom: 0; left: 0; right: 0;
+  top: -55px;
+  left: 0;
+  right: 0;
   height: 110px;
   display: flex;
   align-items: center;
@@ -158,17 +162,18 @@ html, body {
   font-weight: 700;
   color: #ffffff;
   line-height: 1;
-  transform: translateY(50%);
 }
 
-/* ── Animated flap — top (folds away, reveals new top) ── */
+/* animated flap — top (folds away downward, shows OLD digit) */
 .f-top {
   position: absolute;
-  top: 0; left: 0; right: 0;
+  top: 0;
+  left: 0;
+  right: 0;
   height: 50%;
-  background: #232323;
-  border-radius: 8px 8px 0 0;
   overflow: hidden;
+  background-color: #232323;
+  border-radius: 8px 8px 0 0;
   z-index: 20;
   transform-origin: bottom center;
   transform: rotateX(0deg);
@@ -177,7 +182,9 @@ html, body {
 
 .f-top .digit {
   position: absolute;
-  top: 0; left: 0; right: 0;
+  top: 0;
+  left: 0;
+  right: 0;
   height: 110px;
   display: flex;
   align-items: center;
@@ -188,14 +195,16 @@ html, body {
   line-height: 1;
 }
 
-/* ── Animated flap — bottom (swings down, reveals new bottom) ── */
+/* animated flap — bottom (swings down, reveals NEW digit bottom half) */
 .f-bot {
   position: absolute;
-  bottom: 0; left: 0; right: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
   height: 50%;
-  background: #1a1a1a;
-  border-radius: 0 0 8px 8px;
   overflow: hidden;
+  background-color: #1a1a1a;
+  border-radius: 0 0 8px 8px;
   z-index: 20;
   transform-origin: top center;
   transform: rotateX(90deg);
@@ -204,7 +213,9 @@ html, body {
 
 .f-bot .digit {
   position: absolute;
-  bottom: 0; left: 0; right: 0;
+  top: -55px;
+  left: 0;
+  right: 0;
   height: 110px;
   display: flex;
   align-items: center;
@@ -213,5 +224,4 @@ html, body {
   font-weight: 700;
   color: #ffffff;
   line-height: 1;
-  transform: translateY(50%);
 }
