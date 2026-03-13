@@ -1,166 +1,170 @@
-/* =============================================
-   FLIP CLOCK — app.js
-   ============================================= */
-
 'use strict';
 
-const DAYS = [
-  'Sunday', 'Monday', 'Tuesday', 'Wednesday',
-  'Thursday', 'Friday', 'Saturday'
-];
-
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
-];
+var DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 function pad(n) {
-  return String(n).padStart(2, '0');
+  return n < 10 ? '0' + n : '' + n;
 }
 
-/* ── Build a single digit card ── */
-function createCard() {
-  const card  = document.createElement('div'); card.className  = 'card';
-  const gap   = document.createElement('div'); gap.className   = 'card-gap';
+function el(tag, cls) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  return e;
+}
 
-  const sTop  = document.createElement('div'); sTop.className  = 's-top';
-  const sTopD = document.createElement('div'); sTopD.className = 'digit';
+/* ── create one digit card ── */
+function createCard() {
+  var card  = el('div', 'card');
+  var gap   = el('div', 'card-gap');
+
+  var sTop  = el('div', 's-top');
+  var sTopD = el('div', 'digit');
   sTop.appendChild(sTopD);
 
-  const sBot  = document.createElement('div'); sBot.className  = 's-bot';
-  const sBotD = document.createElement('div'); sBotD.className = 'digit';
+  var sBot  = el('div', 's-bot');
+  var sBotD = el('div', 'digit');
   sBot.appendChild(sBotD);
 
-  const fTop  = document.createElement('div'); fTop.className  = 'f-top';
-  const fTopD = document.createElement('div'); fTopD.className = 'digit';
+  var fTop  = el('div', 'f-top');
+  var fTopD = el('div', 'digit');
   fTop.appendChild(fTopD);
 
-  const fBot  = document.createElement('div'); fBot.className  = 'f-bot';
-  const fBotD = document.createElement('div'); fBotD.className = 'digit';
+  var fBot  = el('div', 'f-bot');
+  var fBotD = el('div', 'digit');
   fBot.appendChild(fBotD);
 
-  card.append(sTop, sBot, fTop, fBot, gap);
+  card.appendChild(sTop);
+  card.appendChild(sBot);
+  card.appendChild(fTop);
+  card.appendChild(fBot);
+  card.appendChild(gap);
 
   return {
-    card,
-    sTopD, sBotD,
-    fTop,  fBot,
-    fTopD, fBotD,
-    current: null,
-    busy: false
+    card  : card,
+    sTopD : sTopD,
+    sBotD : sBotD,
+    fTop  : fTop,
+    fBot  : fBot,
+    fTopD : fTopD,
+    fBotD : fBotD,
+    current : null,
+    busy    : false
   };
 }
 
-/* ── Build a group of 2 cards with a label ── */
+/* ── create a group (label + 2 cards) ── */
 function createGroup(label) {
-  const group = document.createElement('div'); group.className = 'group';
-  const pair  = document.createElement('div'); pair.className  = 'pair';
-
-  const c0 = createCard();
-  const c1 = createCard();
-  pair.append(c0.card, c1.card);
-
-  const lbl = document.createElement('div');
-  lbl.className   = 'group-label';
+  var group = el('div', 'group');
+  var pair  = el('div', 'pair');
+  var c0    = createCard();
+  var c1    = createCard();
+  pair.appendChild(c0.card);
+  pair.appendChild(c1.card);
+  var lbl   = el('div', 'group-label');
   lbl.textContent = label;
-
-  group.append(pair, lbl);
-  return { group, cards: [c0, c1] };
+  group.appendChild(pair);
+  group.appendChild(lbl);
+  return { group: group, cards: [c0, c1] };
 }
 
-/* ── Build separator dots ── */
+/* ── create separator ── */
 function createSep() {
-  const sep = document.createElement('div');
-  sep.className = 'sep';
-  sep.innerHTML = '<div class="sep-dot"></div><div class="sep-dot"></div>';
+  var sep = el('div', 'sep');
+  sep.appendChild(el('div', 'sep-dot'));
+  sep.appendChild(el('div', 'sep-dot'));
   return sep;
 }
 
-/* ── Flip a single card to a new digit ── */
+/* ── flip one card to a new character ── */
 function flipCard(c, next) {
   if (c.current === next || c.busy) return;
-
-  const old = c.current || next;
+  var old   = c.current || next;
   c.busy    = true;
   c.current = next;
 
-  // Static halves immediately show the new digit
+  /* static halves already show the new digit */
   c.sTopD.textContent = next;
   c.sBotD.textContent = next;
 
-  // Top flap: shows OLD digit, starts flat (0deg), will fold away to -90deg
+  /* top flap: shows OLD, starts flat, will fold away */
   c.fTopD.textContent     = old;
   c.fTop.style.transition = 'none';
   c.fTop.style.transform  = 'rotateX(0deg)';
 
-  // Bottom flap: shows NEW digit, starts hidden (90deg), will swing to 0deg
+  /* bottom flap: shows NEW, starts hidden, will swing down */
   c.fBotD.textContent     = next;
   c.fBot.style.transition = 'none';
   c.fBot.style.transform  = 'rotateX(90deg)';
 
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    // Phase 1 — top flap folds away
-    c.fTop.style.transition = 'transform 0.22s ease-in';
-    c.fTop.style.transform  = 'rotateX(-90deg)';
+  /* double rAF so the "none" transition takes effect first */
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
 
-    setTimeout(() => {
-      // Phase 2 — bottom flap swings into place
-      c.fBot.style.transition = 'transform 0.22s ease-out';
-      c.fBot.style.transform  = 'rotateX(0deg)';
+      c.fTop.style.transition = 'transform 0.22s ease-in';
+      c.fTop.style.transform  = 'rotateX(-90deg)';
 
-      setTimeout(() => {
-        // Reset flaps silently back to starting positions
-        c.fTop.style.transition = 'none';
-        c.fTop.style.transform  = 'rotateX(0deg)';
-        c.fBot.style.transition = 'none';
-        c.fBot.style.transform  = 'rotateX(90deg)';
-        c.busy = false;
-      }, 230);
-    }, 210);
-  }));
-}
+      setTimeout(function () {
+        c.fBot.style.transition = 'transform 0.22s ease-out';
+        c.fBot.style.transform  = 'rotateX(0deg)';
 
-/* ── Build the clock DOM ── */
-const timeRow = document.getElementById('time-row');
+        setTimeout(function () {
+          c.fTop.style.transition = 'none';
+          c.fTop.style.transform  = 'rotateX(0deg)';
+          c.fBot.style.transition = 'none';
+          c.fBot.style.transform  = 'rotateX(90deg)';
+          c.busy = false;
+        }, 230);
+      }, 210);
 
-const gH = createGroup('hours');
-const gM = createGroup('min');
-const gS = createGroup('sec');
-
-timeRow.append(gH.group, createSep(), gM.group, createSep(), gS.group);
-
-/* ── Seed initial values without animating ── */
-function seed() {
-  const now = new Date();
-  const hs  = pad(now.getHours());
-  const ms  = pad(now.getMinutes());
-  const ss  = pad(now.getSeconds());
-
-  [[gH.cards, hs], [gM.cards, ms], [gS.cards, ss]].forEach(([cards, val]) => {
-    cards.forEach((c, i) => {
-      c.current           = val[i];
-      c.sTopD.textContent = val[i];
-      c.sBotD.textContent = val[i];
     });
   });
 }
 
-/* ── Tick every second ── */
-function tick() {
-  const now = new Date();
-  const hs  = pad(now.getHours());
-  const ms  = pad(now.getMinutes());
-  const ss  = pad(now.getSeconds());
+/* ── build clock ── */
+var timeRow = document.getElementById('time-row');
+var gH = createGroup('hours');
+var gM = createGroup('min');
+var gS = createGroup('sec');
+timeRow.appendChild(gH.group);
+timeRow.appendChild(createSep());
+timeRow.appendChild(gM.group);
+timeRow.appendChild(createSep());
+timeRow.appendChild(gS.group);
 
-  gH.cards.forEach((c, i) => flipCard(c, hs[i]));
-  gM.cards.forEach((c, i) => flipCard(c, ms[i]));
-  gS.cards.forEach((c, i) => flipCard(c, ss[i]));
+/* ── seed without animation ── */
+function seed() {
+  var now = new Date();
+  var hs  = pad(now.getHours());
+  var ms  = pad(now.getMinutes());
+  var ss  = pad(now.getSeconds());
+  var all = [[gH.cards, hs], [gM.cards, ms], [gS.cards, ss]];
+  for (var i = 0; i < all.length; i++) {
+    var cards = all[i][0];
+    var val   = all[i][1];
+    for (var j = 0; j < cards.length; j++) {
+      cards[j].current           = val[j];
+      cards[j].sTopD.textContent = val[j];
+      cards[j].sBotD.textContent = val[j];
+    }
+  }
+}
+
+/* ── tick every second ── */
+function tick() {
+  var now = new Date();
+  var hs  = pad(now.getHours());
+  var ms  = pad(now.getMinutes());
+  var ss  = pad(now.getSeconds());
+
+  flipCard(gH.cards[0], hs[0]); flipCard(gH.cards[1], hs[1]);
+  flipCard(gM.cards[0], ms[0]); flipCard(gM.cards[1], ms[1]);
+  flipCard(gS.cards[0], ss[0]); flipCard(gS.cards[1], ss[1]);
 
   document.getElementById('date-line').textContent =
-    DAYS[now.getDay()] + '  ·  ' +
+    DAYS[now.getDay()] + '  \u00b7  ' +
     MONTHS[now.getMonth()] + ' ' +
-    now.getDate() + ', ' +
-    now.getFullYear();
+    now.getDate() + ', ' + now.getFullYear();
 }
 
 seed();
