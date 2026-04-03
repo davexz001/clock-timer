@@ -1,339 +1,585 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Flip Clock</title>
-
-  <!-- ========== CSS ========== -->
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       min-height: 100vh;
-      background: #0a0a0a;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: 'Courier New', Courier, monospace;
+      background: #000;
+      font-family: 'Bebas Neue', sans-serif;
+      overflow: hidden;
+      color: #fff;
     }
 
-    #clock {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 20px;
-      background: #111;
-      padding: 40px 36px 32px;
-      border-radius: 16px;
+    .clock-wrapper {
+      text-align: center;
+      position: relative;
+      z-index: 10;
     }
 
-    #date-line {
-      font-size: 11px;
-      letter-spacing: 0.28em;
+    .greeting {
+      margin-bottom: 48px;
+      font-size: 1.4rem;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 10px;
       text-transform: uppercase;
-      color: #444;
-      white-space: nowrap;
     }
 
-    #time-row {
+    .time-row {
       display: flex;
-      flex-direction: row;
       align-items: center;
-      gap: 14px;
-    }
-
-    .group {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      justify-content: center;
       gap: 8px;
     }
 
-    .group-label {
-      font-size: 9px;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: #333;
-    }
-
-    .pair {
+    .digit-pair {
       display: flex;
-      flex-direction: row;
       gap: 6px;
+      position: relative;
     }
 
-    .sep {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      margin-bottom: 20px;
+    .digit-pair-label {
+      position: absolute;
+      bottom: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.15);
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      font-family: sans-serif;
     }
 
-    .sep-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #555;
-      animation: blink 1s step-start infinite;
-    }
-
-    @keyframes blink {
-      0%, 100% { background: #555; }
-      50%       { background: #222; }
-    }
-
-    /* card */
-    .card {
+    /* ======================== */
+    /* FLIP TILE                */
+    /* ======================== */
+    .flip-tile {
       position: relative;
       width: 80px;
-      height: 110px;
-      border-radius: 8px;
-      overflow: hidden;
-      background: #1c1c1c;
+      height: 120px;
+      border-radius: 10px;
+      font-size: 6rem;
+      line-height: 1;
     }
 
-    .card-gap {
+    /* ---- Static halves (always visible behind) ---- */
+    .tile-top,
+    .tile-bottom {
       position: absolute;
-      left: 0; right: 0;
-      top: 53px;
-      height: 4px;
-      background: #0a0a0a;
+      left: 0;
+      width: 100%;
+      height: 50%;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+    }
+
+    .tile-top {
+      top: 0;
+      background: linear-gradient(180deg, #2a2a2a 0%, #1e1e1e 100%);
+      border-radius: 10px 10px 0 0;
+      align-items: flex-end;
+      border-bottom: 1px solid rgba(0,0,0,0.9);
+    }
+
+    .tile-top span {
+      transform: translateY(50%);
+      color: #e8e8e8;
+    }
+
+    .tile-bottom {
+      bottom: 0;
+      background: linear-gradient(180deg, #1a1a1a 0%, #141414 100%);
+      border-radius: 0 0 10px 10px;
+      align-items: flex-start;
+      border-top: 1px solid rgba(60,60,60,0.3);
+    }
+
+    .tile-bottom span {
+      transform: translateY(-50%);
+      color: #d0d0d0;
+    }
+
+    /* Center line */
+    .flip-tile::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: -1px;
+      right: -1px;
+      height: 3px;
+      background: #000;
+      z-index: 50;
+      transform: translateY(-50%);
+      border-radius: 2px;
+    }
+
+    /* ---- Animated flap (top-half folds down) ---- */
+    .flap-front,
+    .flap-back {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 50%;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
       z-index: 30;
+      backface-visibility: hidden;
     }
 
-    .s-top {
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 55px;
-      overflow: hidden;
-      background: #232323;
-      border-radius: 8px 8px 0 0;
-      z-index: 1;
-    }
-
-    .s-bot {
-      position: absolute;
-      top: 55px; left: 0; right: 0;
-      height: 55px;
-      overflow: hidden;
-      background: #1a1a1a;
-      border-radius: 0 0 8px 8px;
-      z-index: 1;
-    }
-
-    .s-top .digit {
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 110px;
-      line-height: 110px;
-      text-align: center;
-      font-size: 72px;
-      font-weight: 700;
-      color: #fff;
-    }
-
-    .s-bot .digit {
-      position: absolute;
-      top: -55px; left: 0; right: 0;
-      height: 110px;
-      line-height: 110px;
-      text-align: center;
-      font-size: 72px;
-      font-weight: 700;
-      color: #fff;
-    }
-
-    .f-top {
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 55px;
-      overflow: hidden;
-      background: #232323;
-      border-radius: 8px 8px 0 0;
-      z-index: 20;
+    .flap-front {
+      top: 0;
+      background: linear-gradient(180deg, #2a2a2a 0%, #1e1e1e 100%);
+      border-radius: 10px 10px 0 0;
+      align-items: flex-end;
       transform-origin: bottom center;
-      transform: rotateX(0deg);
-      backface-visibility: hidden;
     }
 
-    .f-top .digit {
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 110px;
-      line-height: 110px;
-      text-align: center;
-      font-size: 72px;
-      font-weight: 700;
-      color: #fff;
+    .flap-front span {
+      transform: translateY(50%);
+      color: #e8e8e8;
     }
 
-    .f-bot {
-      position: absolute;
-      top: 55px; left: 0; right: 0;
-      height: 55px;
-      overflow: hidden;
-      background: #1a1a1a;
-      border-radius: 0 0 8px 8px;
-      z-index: 20;
+    .flap-back {
+      bottom: 0;
+      background: linear-gradient(180deg, #1a1a1a 0%, #141414 100%);
+      border-radius: 0 0 10px 10px;
+      align-items: flex-start;
       transform-origin: top center;
-      transform: rotateX(90deg);
-      backface-visibility: hidden;
+      transform: rotateX(180deg);
     }
 
-    .f-bot .digit {
+    .flap-back span {
+      transform: translateY(-50%);
+      color: #d0d0d0;
+    }
+
+    /* --- Keyframes --- */
+    @keyframes foldDown {
+      0%   { transform: rotateX(0deg); }
+      100% { transform: rotateX(-180deg); }
+    }
+
+    @keyframes unfoldBottom {
+      0%   { transform: rotateX(180deg); }
+      100% { transform: rotateX(0deg); }
+    }
+
+    .flap-front.animating {
+      animation: foldDown 0.5s ease-in forwards;
+    }
+
+    .flap-back.animating {
+      animation: unfoldBottom 0.5s 0.25s ease-out forwards;
+    }
+
+    /* Shadow overlay during animation */
+    .shadow-top {
       position: absolute;
-      top: -55px; left: 0; right: 0;
-      height: 110px;
-      line-height: 110px;
-      text-align: center;
-      font-size: 72px;
-      font-weight: 700;
-      color: #fff;
+      top: 0; left: 0;
+      width: 100%;
+      height: 50%;
+      background: rgba(0,0,0,0);
+      z-index: 25;
+      border-radius: 10px 10px 0 0;
+      pointer-events: none;
+    }
+
+    .shadow-bottom {
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 100%;
+      height: 50%;
+      background: rgba(0,0,0,0.4);
+      z-index: 25;
+      border-radius: 0 0 10px 10px;
+      pointer-events: none;
+    }
+
+    @keyframes shadowTopIn {
+      0%   { background: rgba(0,0,0,0); }
+      100% { background: rgba(0,0,0,0.25); }
+    }
+
+    @keyframes shadowBottomOut {
+      0%   { background: rgba(0,0,0,0.4); }
+      100% { background: rgba(0,0,0,0); }
+    }
+
+    .shadow-top.animating {
+      animation: shadowTopIn 0.5s ease-in forwards;
+    }
+
+    .shadow-bottom.animating {
+      animation: shadowBottomOut 0.5s 0.25s ease-out forwards;
+    }
+
+    /* ======================== */
+    /* COLON SEPARATOR          */
+    /* ======================== */
+    .colon {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 0 6px;
+    }
+
+    .colon-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #444;
+      animation: pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.25; }
+    }
+
+    /* ======================== */
+    /* AM/PM Badge              */
+    /* ======================== */
+    .ampm {
+      background: #1a1a1a;
+      color: rgba(255,255,255,0.5);
+      font-size: 1.5rem;
+      padding: 14px 18px;
+      border-radius: 10px;
+      margin-left: 16px;
+      letter-spacing: 3px;
+      border: 1px solid #2a2a2a;
+      align-self: center;
+    }
+
+    /* ======================== */
+    /* Bottom info              */
+    /* ======================== */
+    .seconds-track {
+      margin: 40px auto 0;
+      width: 100%;
+      max-width: 560px;
+      height: 2px;
+      background: #111;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .seconds-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #333, #888);
+      border-radius: 2px;
+      transition: width 0.3s linear;
+    }
+
+    .date-text {
+      margin-top: 40px;
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.15);
+      letter-spacing: 8px;
+      text-transform: uppercase;
+      font-family: sans-serif;
+    }
+
+    .mode-toggle {
+      margin-top: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+    }
+
+    .mode-label {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.2);
+      letter-spacing: 2px;
+      font-family: sans-serif;
+    }
+
+    .switch {
+      position: relative;
+      width: 52px;
+      height: 28px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .switch.on {
+      background: #222;
+      border-color: #555;
+    }
+
+    .switch-dot {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 18px;
+      height: 18px;
+      background: #ccc;
+      border-radius: 50%;
+      transition: transform 0.3s;
+    }
+
+    .switch.on .switch-dot {
+      transform: translateX(24px);
+    }
+
+    /* Subtle vignette */
+    .vignette {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ======================== */
+    /* Responsive               */
+    /* ======================== */
+    @media (max-width: 768px) {
+      .flip-tile { width: 58px; height: 88px; font-size: 4.2rem; }
+      .colon-dot { width: 7px; height: 7px; }
+      .colon { gap: 14px; }
+      .greeting { font-size: 1rem; letter-spacing: 6px; margin-bottom: 36px; }
+      .ampm { font-size: 1.1rem; padding: 10px 12px; }
+    }
+
+    @media (max-width: 480px) {
+      .flip-tile { width: 44px; height: 68px; font-size: 3.2rem; }
+      .colon-dot { width: 5px; height: 5px; }
+      .colon { gap: 10px; padding: 0 2px; }
+      .digit-pair { gap: 4px; }
+      .time-row { gap: 4px; }
+      .greeting { font-size: 0.75rem; letter-spacing: 4px; margin-bottom: 28px; }
+      .date-text { font-size: 0.6rem; letter-spacing: 4px; }
+      .ampm { font-size: 0.9rem; padding: 8px 10px; margin-left: 8px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ========== HTML ========== -->
-  <div id="clock">
-    <div id="date-line"></div>
-    <div id="time-row"></div>
+  <div class="vignette"></div>
+
+  <div class="clock-wrapper">
+    <div class="greeting" id="greeting">Good Evening</div>
+
+    <div class="time-row">
+      <!-- Hours -->
+      <div class="digit-pair">
+        <div class="flip-tile" id="h0">
+          <div class="tile-top"><span>0</span></div>
+          <div class="tile-bottom"><span>0</span></div>
+        </div>
+        <div class="flip-tile" id="h1">
+          <div class="tile-top"><span>0</span></div>
+          <div class="tile-bottom"><span>0</span></div>
+        </div>
+        <div class="digit-pair-label">Hours</div>
+      </div>
+
+      <div class="colon">
+        <div class="colon-dot"></div>
+        <div class="colon-dot"></div>
+      </div>
+
+      <!-- Minutes -->
+      <div class="digit-pair">
+        <div class="flip-tile" id="m0">
+          <div class="tile-top"><span>0</span></div>
+          <div class="tile-bottom"><span>0</span></div>
+        </div>
+        <div class="flip-tile" id="m1">
+          <div class="tile-top"><span>0</span></div>
+          <div class="tile-bottom"><span>0</span></div>
+        </div>
+        <div class="digit-pair-label">Minutes</div>
+      </div>
+
+      <div class="colon">
+        <div class="colon-dot"></div>
+        <div class="colon-dot"></div>
+      </div>
+
+      <!-- Seconds -->
+      <div class="digit-pair">
+        <div class="flip-tile" id="s0">
+          <div class="tile-top"><span>0</span></div>
+          <div class="tile-bottom"><span>0</span></div>
+        </div>
+        <div class="flip-tile" id="s1">
+          <div class="tile-top"><span>0</span></div>
+          <div class="tile-bottom"><span>0</span></div>
+        </div>
+        <div class="digit-pair-label">Seconds</div>
+      </div>
+
+      <div class="ampm" id="ampm">AM</div>
+    </div>
+
+    <div class="seconds-track">
+      <div class="seconds-fill" id="secBar"></div>
+    </div>
+
+    <div class="date-text" id="dateText"></div>
+
+    <div class="mode-toggle">
+      <span class="mode-label">12H</span>
+      <div class="switch" id="modeSwitch" onclick="toggleMode()">
+        <div class="switch-dot"></div>
+      </div>
+      <span class="mode-label">24H</span>
+    </div>
   </div>
 
-  <!-- ========== JAVASCRIPT ========== -->
   <script>
-    var DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-    var MONTHS = ['January','February','March','April','May','June',
-                  'July','August','September','October','November','December'];
+    let use24 = false;
 
-    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+    // Current digit values
+    const current = { h0: null, h1: null, m0: null, m1: null, s0: null, s1: null };
 
-    function make(cls) {
-      var e = document.createElement('div');
-      e.className = cls;
-      return e;
-    }
+    /**
+     * Flip a single tile from oldVal → newVal
+     *
+     * Structure during animation:
+     *   - tile-top    (static) → shows NEW value (revealed as flap folds away)
+     *   - tile-bottom (static) → shows OLD value (hidden as flap-back unfolds over it)
+     *   - flap-front  (animated) → shows OLD value, folds from 0° to -180° (top half going down)
+     *   - flap-back   (animated) → shows NEW value, unfolds from 180° to 0° (bottom half appearing)
+     *   - shadow overlays for realism
+     */
+    function flip(id, newVal) {
+      if (current[id] === newVal) return;
 
-    function createCard() {
-      var card  = make('card');
-      var sTop  = make('s-top');  var sTopD = make('digit'); sTop.appendChild(sTopD);
-      var sBot  = make('s-bot');  var sBotD = make('digit'); sBot.appendChild(sBotD);
-      var fTop  = make('f-top');  var fTopD = make('digit'); fTop.appendChild(fTopD);
-      var fBot  = make('f-bot');  var fBotD = make('digit'); fBot.appendChild(fBotD);
-      var gap   = make('card-gap');
-      card.appendChild(sTop);
-      card.appendChild(sBot);
-      card.appendChild(fTop);
-      card.appendChild(fBot);
-      card.appendChild(gap);
-      return { card:card, sTopD:sTopD, sBotD:sBotD,
-               fTop:fTop, fBot:fBot, fTopD:fTopD, fBotD:fBotD,
-               current:null, busy:false };
-    }
+      const tile = document.getElementById(id);
+      const oldVal = current[id];
+      current[id] = newVal;
 
-    function createGroup(label) {
-      var group = make('group');
-      var pair  = make('pair');
-      var c0 = createCard(), c1 = createCard();
-      pair.appendChild(c0.card);
-      pair.appendChild(c1.card);
-      var lbl = make('group-label');
-      lbl.textContent = label;
-      group.appendChild(pair);
-      group.appendChild(lbl);
-      return { group:group, cards:[c0,c1] };
-    }
+      const tileTop = tile.querySelector('.tile-top span');
+      const tileBottom = tile.querySelector('.tile-bottom span');
 
-    function createSep() {
-      var sep = make('sep');
-      sep.appendChild(make('sep-dot'));
-      sep.appendChild(make('sep-dot'));
-      return sep;
-    }
-
-    function flipCard(c, next) {
-      if (c.current === next || c.busy) return;
-      var old   = c.current || next;
-      c.busy    = true;
-      c.current = next;
-
-      c.sTopD.textContent = next;
-      c.sBotD.textContent = next;
-
-      c.fTopD.textContent     = old;
-      c.fTop.style.transition = 'none';
-      c.fTop.style.transform  = 'rotateX(0deg)';
-
-      c.fBotD.textContent     = next;
-      c.fBot.style.transition = 'none';
-      c.fBot.style.transform  = 'rotateX(90deg)';
-
-      requestAnimationFrame(function() {
-        requestAnimationFrame(function() {
-          c.fTop.style.transition = 'transform 0.25s ease-in';
-          c.fTop.style.transform  = 'rotateX(-90deg)';
-          setTimeout(function() {
-            c.fBot.style.transition = 'transform 0.25s ease-out';
-            c.fBot.style.transform  = 'rotateX(0deg)';
-            setTimeout(function() {
-              c.fTop.style.transition = 'none';
-              c.fTop.style.transform  = 'rotateX(0deg)';
-              c.fBot.style.transition = 'none';
-              c.fBot.style.transform  = 'rotateX(90deg)';
-              c.busy = false;
-            }, 260);
-          }, 240);
-        });
-      });
-    }
-
-    var timeRow = document.getElementById('time-row');
-    var gH = createGroup('hours');
-    var gM = createGroup('min');
-    var gS = createGroup('sec');
-    timeRow.appendChild(gH.group);
-    timeRow.appendChild(createSep());
-    timeRow.appendChild(gM.group);
-    timeRow.appendChild(createSep());
-    timeRow.appendChild(gS.group);
-
-    function seed() {
-      var now = new Date();
-      var hs = pad(now.getHours());
-      var ms = pad(now.getMinutes());
-      var ss = pad(now.getSeconds());
-      var all = [[gH.cards,hs],[gM.cards,ms],[gS.cards,ss]];
-      for (var i = 0; i < all.length; i++) {
-        for (var j = 0; j < 2; j++) {
-          all[i][0][j].current           = all[i][1][j];
-          all[i][0][j].sTopD.textContent = all[i][1][j];
-          all[i][0][j].sBotD.textContent = all[i][1][j];
-        }
+      // First load — just set values, no animation
+      if (oldVal === null) {
+        tileTop.textContent = newVal;
+        tileBottom.textContent = newVal;
+        return;
       }
+
+      // Clean up any previous animation elements
+      tile.querySelectorAll('.flap-front, .flap-back, .shadow-top, .shadow-bottom').forEach(e => e.remove());
+
+      // 1. Set static top to NEW (it will be revealed as flap-front folds away)
+      tileTop.textContent = newVal;
+
+      // 2. Keep static bottom as OLD (it will be covered by flap-back)
+      tileBottom.textContent = oldVal;
+
+      // 3. Create flap-front (shows OLD value, starts flat, folds down to -180°)
+      const flapFront = document.createElement('div');
+      flapFront.className = 'flap-front';
+      flapFront.innerHTML = '<span>' + oldVal + '</span>';
+      tile.appendChild(flapFront);
+
+      // 4. Create flap-back (shows NEW value, starts at 180°, unfolds to 0°)
+      const flapBack = document.createElement('div');
+      flapBack.className = 'flap-back';
+      flapBack.innerHTML = '<span>' + newVal + '</span>';
+      tile.appendChild(flapBack);
+
+      // 5. Shadow overlays
+      const shadowTop = document.createElement('div');
+      shadowTop.className = 'shadow-top';
+      tile.appendChild(shadowTop);
+
+      const shadowBottom = document.createElement('div');
+      shadowBottom.className = 'shadow-bottom';
+      tile.appendChild(shadowBottom);
+
+      // 6. Trigger animation (force reflow first)
+      void tile.offsetWidth;
+      flapFront.classList.add('animating');
+      flapBack.classList.add('animating');
+      shadowTop.classList.add('animating');
+      shadowBottom.classList.add('animating');
+
+      // 7. Cleanup after animation finishes
+      setTimeout(() => {
+        tileBottom.textContent = newVal;
+        flapFront.remove();
+        flapBack.remove();
+        shadowTop.remove();
+        shadowBottom.remove();
+      }, 800);
+    }
+
+    function getGreeting(h) {
+      if (h >= 5 && h < 12) return '☀️  Good Morning';
+      if (h >= 12 && h < 17) return '🌤️  Good Afternoon';
+      if (h >= 17 && h < 21) return '🌅  Good Evening';
+      return '🌙  Good Night';
     }
 
     function tick() {
-      var now = new Date();
-      var hs = pad(now.getHours());
-      var ms = pad(now.getMinutes());
-      var ss = pad(now.getSeconds());
-      flipCard(gH.cards[0], hs[0]); flipCard(gH.cards[1], hs[1]);
-      flipCard(gM.cards[0], ms[0]); flipCard(gM.cards[1], ms[1]);
-      flipCard(gS.cards[0], ss[0]); flipCard(gS.cards[1], ss[1]);
-      document.getElementById('date-line').textContent =
-        DAYS[now.getDay()] + '  \u00b7  ' +
-        MONTHS[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+      const now = new Date();
+      let h = now.getHours();
+      const mi = now.getMinutes();
+      const s = now.getSeconds();
+      const ap = document.getElementById('ampm');
+
+      document.getElementById('greeting').textContent = getGreeting(h);
+
+      if (!use24) {
+        const label = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        ap.textContent = label;
+        ap.style.display = '';
+      } else {
+        ap.style.display = 'none';
+      }
+
+      const hh = String(h).padStart(2, '0');
+      const mm = String(mi).padStart(2, '0');
+      const ss = String(s).padStart(2, '0');
+
+      flip('h0', hh[0]);
+      flip('h1', hh[1]);
+      flip('m0', mm[0]);
+      flip('m1', mm[1]);
+      flip('s0', ss[0]);
+      flip('s1', ss[1]);
+
+      document.getElementById('secBar').style.width = ((s / 59) * 100) + '%';
+
+      const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const months = ['January','February','March','April','May','June',
+                       'July','August','September','October','November','December'];
+      document.getElementById('dateText').textContent =
+        days[now.getDay()] + '  ·  ' + months[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
     }
 
-    seed();
+    function toggleMode() {
+      use24 = !use24;
+      document.getElementById('modeSwitch').classList.toggle('on');
+      Object.keys(current).forEach(k => current[k] = null);
+      tick();
+    }
+
     tick();
     setInterval(tick, 1000);
   </script>
-
 </body>
 </html>
